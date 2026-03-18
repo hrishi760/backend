@@ -1,0 +1,42 @@
+name: Backend SonarQube
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        working-directory: backend-flask
+        run: pip install -r requirements.txt
+
+      - name: Snyk Scan
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        with:
+          command: test
+          args: --file=backend-flask/requirements.txt
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.sources=backend-flask
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
